@@ -1,0 +1,14 @@
+{
+    "Lat": 59.5367,
+    "Lng": 43.0266,
+    "samples": {
+        "sample_1": "2016-02-12-00 00_2016-02-12-23 59_Sentinel-2_L1C_True_color",
+        "sample_2": "2017-02-16-00 00_2017-02-16-23 59_Sentinel-2_L1C_True_color",
+        "sample_3": "2018-02-06-00 00_2018-02-06-23 59_Sentinel-2_L1C_True_color",
+        "sample_4": "2019-02-23-00 00_2019-02-23-23 59_Sentinel-2_L1C_True_color",
+        "sample_5": "2020-02-26-00 00_2020-02-26-23 59_Sentinel-2_L1C_True_color",
+        "sample_6": "2021-02-15-00 00_2021-02-15-23 59_Sentinel-2_L1C_True_color",
+        "sample_7": "2022-02-05-00 00_2022-02-05-23 59_Sentinel-2_L1C_True_color",
+        "sample_8": "2023-01-08-00 00_2023-01-08-23 59_Sentinel-2_L1C_True_color"
+    }
+}
