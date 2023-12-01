@@ -3,6 +3,8 @@ import requests
 import dotenv
 import oauthlib.oauth2
 import requests_oauthlib
+import PIL.Image
+import io
 
 dotenv.load_dotenv(dotenv.find_dotenv())
 
@@ -23,15 +25,15 @@ def get_example_image(access_token):
             "input": {
                 "bounds": {
                     "bbox": [
-                        13.822174072265625,
-                        45.85080395917834,
-                        14.55963134765625,
-                        46.29191774991382
+                        59.14260,
+                        101.58525,
+                        59.11345,
+                        101.72894,
                     ]
                 },
                 "data": [
                     {
-                        "type": "sentinel-2-l2a"
+                        "type": "sentinel-2-l2a",
                     }
                 ]
             },
@@ -75,9 +77,12 @@ def main():
         include_client_id=True,
     )
     access_token = token["access_token"]
-    # response = get_example_image(access_token)
-    # with open("output.txt", "rb") as f:
-    #     response = f.read()
+    print(token)
+    response = get_example_image(access_token)
+    with open("output", "wb") as f:
+        f.write(response.content)
+    image = PIL.Image.open(io.BytesIO(response.content))
+    image.show()
 
 
 if __name__ == "__main__":
