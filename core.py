@@ -52,9 +52,8 @@ class SentinelHubMaster:
         coords: tuple[float, float, float, float],
         time_intervals: list[tuple[str, str]],
         data_collection: str,
-        erase_clouds: bool = False,
         format: str = "png",
-        factor: float = 3.5,
+        factor: float = 2.5,
         resolution: float = 50,  # "resolution" meters per pixel
     ) -> list[np.ndarray]:
         n_bbox = sh.geometry.BBox(
@@ -65,18 +64,56 @@ class SentinelHubMaster:
             n_bbox,
             resolution=resolution,
         )
-        if (erase_clouds):
-            cur_evalscript = SentinelHubMaster.get_true_color_black_clouds_evalscript(
-                factor=factor,
-            )
-        else:
-            cur_evalscript = SentinelHubMaster.get_true_color_evalscript(
-                factor=factor,
-            )
         requests = []
         for slot in time_intervals:
             request_true_color = sh.api.process.SentinelHubRequest(
-                evalscript=cur_evalscript,
+                evalscript=SentinelHubMaster.get_true_color_evalscript(
+                    factor=factor,
+                ),
+                input_data=[
+                    sh.api.process.SentinelHubRequest.input_data(
+                        data_collection=SentinelHubMaster.TO_DATA_COLLECTION[
+                            data_collection.upper()
+                        ],
+                        time_interval=slot,
+                        mosaicking_order=sh.constants.MosaickingOrder.LEAST_CC,
+                    )
+                ],
+                responses=[
+                    sh.api.process.SentinelHubRequest.output_response(
+                        "default",
+                        format,
+                    ),
+                ],
+                bbox=n_bbox,
+                size=n_size,
+                config=self.config,
+            )
+            requests.append(request_true_color.download_list[0])
+        return sh.download.sentinelhub_client.SentinelHubDownloadClient(
+            config=self.config,
+        ).download(requests, max_threads=5)
+
+    def get_box_cloud_masks(
+        self,
+        coords: tuple[float, float, float, float],
+        time_intervals: list[tuple[str, str]],
+        data_collection: str,
+        format: str = "png",
+        resolution: float = 50,  # "resolution" meters per pixel
+    ) -> list[np.ndarray]:
+        n_bbox = sh.geometry.BBox(
+            bbox=coords,
+            crs=sh.constants.CRS.WGS84,
+        )
+        n_size = sh.geo_utils.bbox_to_dimensions(
+            n_bbox,
+            resolution=resolution,
+        )
+        requests = []
+        for slot in time_intervals:
+            request_true_color = sh.api.process.SentinelHubRequest(
+                evalscript=SentinelHubMaster.get_cloud_mask_evalscript(),
                 input_data=[
                     sh.api.process.SentinelHubRequest.input_data(
                         data_collection=SentinelHubMaster.TO_DATA_COLLECTION[
@@ -116,7 +153,7 @@ class SentinelHubMaster:
         )
 
     @staticmethod
-    def get_true_color_evalscript(factor: float = 3.5) -> str:
+    def get_true_color_evalscript(factor: float = 2.5) -> str:
         return """
             //VERSION=3
             function setup() {{
@@ -125,7 +162,7 @@ class SentinelHubMaster:
                         bands: ["B02", "B03", "B04"]
                     }}],
                     output: {{
-                        bands: 3
+                        bands: 3,
                     }}
                 }};
             }}
@@ -137,24 +174,25 @@ class SentinelHubMaster:
         """.format(factor)
     
     @staticmethod
-    def get_true_color_black_clouds_evalscript(factor: float = 3.5) -> str:
+    def get_cloud_mask_evalscript() -> str:
         return """
             //VERSION=3
-            function setup() {{
-                return {{
-                    input: ["B02", "B03", "B04", "CLM"],
-                    output: {{ bands: 3 }}
-                }}
-            }}
+            function setup() {
+                return {
+                    input: [{
+                        bands: ["CLM"]
+                    }],
+                    output: {
+                        bands: 1
+                    }
+                }
+            }
 
-            function evaluatePixel(sample) {{
-                if (sample.CLM == 1) {{
-                    return [0, 0, 0]
-                }}
-                return [
-                    sample.B04 * {0},
-                    sample.B03 * {0},
-                    sample.B02 * {0},
-                ];
-            }}
-        """.format(factor)
+            function evaluatePixel(sample) {
+                if (sample.CLM == 1) {
+                    return [1]
+                } else {
+                    return [0]
+                }
+            }
+        """

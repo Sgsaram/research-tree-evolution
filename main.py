@@ -30,7 +30,6 @@ def remove_folder_content(path: str):
 def main():
     remove_folder_content(OUTPUT_IMAGES_DIR)
     time_intervals = [
-        ("2022-07-01", "2022-07-30"),
         ("2022-08-01", "2022-08-30"),
         ("2022-09-01", "2022-09-30"),
         ("2022-10-01", "2022-10-30"),
@@ -44,14 +43,13 @@ def main():
         coords=EXAMPLE_COORDS,
         resolution=40,
     ))
-    # images = shmaster.get_box_tc_images(
-    #     coords=EXAMPLE_COORDS,
-    #     time_intervals=time_intervals,
-    #     data_collection="sentinel2_l1c",
-    #     erase_clouds=True,
-    #     resolution=40,
-    # )
-    # for ind, image_array in enumerate(images):
+    tc_images = shmaster.get_box_tc_images(
+        coords=EXAMPLE_COORDS,
+        time_intervals=time_intervals,
+        data_collection="sentinel2_l1c",
+        resolution=40,
+    )
+    # for ind, image_array in enumerate(tc_images):
     #     save_image = PIL.Image.fromarray(image_array)
     #     save_image.save(
     #         os.path.join(OUTPUT_IMAGES_DIR, f"img_{ind}.png"),
