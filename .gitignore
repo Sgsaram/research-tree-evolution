@@ -2,4 +2,8 @@
 .idea/
 venv/
 .ipynb_checkpoints/
+__pycache__/
 .env
+output_images/*
+draft_input.txt
+draft_output.txt
