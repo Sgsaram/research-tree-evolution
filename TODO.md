@@ -2,15 +2,5 @@
 
 Markdown todo file for a project.
 
-## Important
-
-- [ ] Do we need to use ML or just filtering and doing some \*\*\* on images?
-    (I think we can't solve this wtih filtering because our dataset has a **LOT OF NOISE** like clouds etc.)
-
-## In progress
-
-- [ ] Look for api on Sentinels site
-    - [ ] Download data
-    - [ ] Mark segments on them
-- [ ] Choose model of finding fields
-- [ ] Choose metric Pixel Accuracy, Dice Coefficient and Jaccard Index (IOU)
+- Find a way how to import all images with 100% (or less, maybe we need to gain all information) tile coverage in time interval
+- Find out what way of three is better: NDSI, K-means with batch average or K-means with binary idea
