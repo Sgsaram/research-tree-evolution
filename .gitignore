@@ -3,6 +3,7 @@
 venv/
 .ipynb_checkpoints/
 __pycache__/
+.eolearn_cache/
 .env
 output_images/*
 draft_input.txt
