@@ -6,12 +6,14 @@ import dotenv
 import matplotlib.pyplot as plt
 import numpy as np
 import PIL.Image
+import PIL.GifImagePlugin
 import eolearn.io
 import eolearn.core
 import sentinelhub as sh
 import datetime
+import math
 
-from typing import List
+from typing import Any, List
 
 dotenv.load_dotenv(dotenv.find_dotenv())
 BASE_DIR = os.getcwd()
@@ -20,14 +22,14 @@ EOLEARN_CACHE_FOLDER = os.path.join(BASE_DIR, ".eolearn_cache")
 SH_CLIENT_ID = os.environ.get("SH_CLIENT_ID", "")
 SH_CLIENT_SECRET = os.environ.get("SH_CLIENT_SECRET", "")
 EXAMPLE_COORDS = (
-    47.4427,
-    56.0485,
-    47.5852,
-    55.9740,
+    90.22093,
+    56.72387,
+    90.28968,
+    56.69019,
 ) # (Lng, Lat)
 EXAMPLE_TIME_INTERVAL = (
-    "2022-08-01",
-    "2022-08-10",
+    "2020-12-01",
+    "2021-04-01",
 )
 
 def remove_folder_content(path: str):
@@ -36,7 +38,7 @@ def remove_folder_content(path: str):
         if os.path.isfile(file_path) or os.path.islink(file_path):
             os.unlink(file_path)
 
-def main():
+def save_eodata():
     remove_folder_content(OUTPUT_IMAGES_DIR)
     config = sh.config.SHConfig(
         sh_client_id=SH_CLIENT_ID,
@@ -54,11 +56,12 @@ def main():
         additional_data=[
             (eolearn.core.constants.FeatureType.MASK, "dataMask"),
         ],
-        resolution=60,
-        time_difference=datetime.timedelta(hours=12),
+        resolution=20,
+        time_difference=datetime.timedelta(weeks=1),
         config=config,
         max_threads=5,
         mosaicking_order=sh.constants.MosaickingOrder.LEAST_CC,
+        maxcc=1,
         cache_folder=EOLEARN_CACHE_FOLDER,
     )
     output_task = eolearn.core.eoworkflow_tasks.OutputTask("eopatch")
@@ -75,12 +78,26 @@ def main():
             },
         },
     )
+
+    class high_opt_nat_color:
+        def __init__(self, data_col: str) -> None:
+            self.data_col = data_col.lower()
+        
+        def __call__(self, a) -> Any:
+            if self.data_col == "l1c":
+                return min(255, max(0, math.cbrt(0.6 * a - 0.035)) * 255)
+            elif self.data_col == "l2a":
+                return min(255, max(0, math.cbrt(0.6 * a) * 255))
+            return ValueError(f"Wrong data coolection {self.data_col}")
+    
+    v_process_func = np.vectorize(high_opt_nat_color("l1c"))
+    v_min = np.vectorize(min)
     eopatch: eolearn.core.eodata.EOPatch = result.outputs["eopatch"]
     time_data: List[datetime.datetime] = eopatch.timestamps.copy()
     mask_data = eopatch.mask["dataMask"].copy()
-    tc_data = (eopatch.data["L1C_data"].copy() * 3.5 * 255).astype(np.uint8)
+    tc_data = v_min(eopatch.data["L1C_data"].copy() * 2.5 * 255, 255).astype(np.uint8)
+    honc_data = v_process_func(eopatch.data["L1C_data"].copy()).astype(np.uint8)
     print(tc_data.shape, mask_data.shape)
-    print(time_data)
     for ind, time in enumerate(time_data):
         time_str = time.isoformat().replace(":", "-")
         save_image = PIL.Image.fromarray(tc_data[ind])
@@ -89,6 +106,26 @@ def main():
                 OUTPUT_IMAGES_DIR,
                 f"{time_str}.png",
             ),
+        )
+        save_image = PIL.Image.fromarray(honc_data[ind])
+        save_image.save(
+            os.path.join(
+                OUTPUT_IMAGES_DIR,
+                f"honc_{time_str}.png",
+            ),
+        )
+
+def main():
+    image_object = PIL.Image.open(
+        os.path.join(BASE_DIR, "assets/real_data_1/cropped-seq-3.gif"),
+    )
+    for frame in range(image_object.n_frames):
+        image_object.seek(frame)
+        image_object.save(
+            os.path.join(
+                BASE_DIR,
+                f"assets/real_data_1/image_{frame}.png",
+            )
         )
 
 

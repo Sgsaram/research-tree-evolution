@@ -1,1 +1,0 @@
-{"error":{"status":500,"reason":"Internal Server Error","message":"MessageBodyReader not found for media type=application/octet-stream, type=class io.jsonwebtoken.impl.DefaultClaims, genericType=class io.jsonwebtoken.impl.DefaultClaims.","code":"RENDERER_EXCEPTION"}}
