@@ -5,6 +5,7 @@ import datetime
 import dotenv
 import matplotlib.pyplot as plt
 import numpy as np
+import cv2 as cv
 import PIL.Image
 import PIL.GifImagePlugin
 import eolearn.io
@@ -12,11 +13,14 @@ import eolearn.core
 import sentinelhub as sh
 import datetime
 import math
+import utils
 
 from typing import Any, List
 
 dotenv.load_dotenv(dotenv.find_dotenv())
 BASE_DIR = os.getcwd()
+SEQ_DIR = os.path.join(os.getcwd(), "assets/real_data_1")
+SEQ_SIZE = 122
 OUTPUT_IMAGES_DIR = os.path.join(BASE_DIR, "output_images")
 EOLEARN_CACHE_FOLDER = os.path.join(BASE_DIR, ".eolearn_cache")
 SH_CLIENT_ID = os.environ.get("SH_CLIENT_ID", "")
@@ -32,14 +36,8 @@ EXAMPLE_TIME_INTERVAL = (
     "2021-04-01",
 )
 
-def remove_folder_content(path: str):
-    for filename in os.listdir(path):
-        file_path = os.path.join(path, filename)
-        if os.path.isfile(file_path) or os.path.islink(file_path):
-            os.unlink(file_path)
-
 def save_eodata():
-    remove_folder_content(OUTPUT_IMAGES_DIR)
+    utils.remove_folder_content(OUTPUT_IMAGES_DIR)
     config = sh.config.SHConfig(
         sh_client_id=SH_CLIENT_ID,
         sh_client_secret=SH_CLIENT_SECRET,
@@ -115,18 +113,59 @@ def save_eodata():
             ),
         )
 
-def main():
-    image_object = PIL.Image.open(
-        os.path.join(BASE_DIR, "assets/real_data_1/cropped-seq-3.gif"),
-    )
-    for frame in range(image_object.n_frames):
-        image_object.seek(frame)
-        image_object.save(
-            os.path.join(
-                BASE_DIR,
-                f"assets/real_data_1/image_{frame}.png",
-            )
+def process_kmeans():
+    K = 2
+    for frame in range(SEQ_SIZE):
+        image = cv.imread(os.path.join(SEQ_DIR, f"image_{frame}.png"))
+        assert image is not None
+        proc_image = np.float32(image.reshape((-1, 3)))
+        criteria = (
+            cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER,
+            30,
+            0.5,
         )
+        comp, labels, centers = cv.kmeans(
+            proc_image,
+            K,
+            None,
+            criteria,
+            30,
+            cv.KMEANS_RANDOM_CENTERS,
+        )
+        center = np.uint8(centers)
+        res = center[labels.flatten()]
+        res2 = res.reshape(image.shape)
+        gray_final_image = cv.cvtColor(res2, cv.COLOR_BGR2GRAY)
+        image_bin = PIL.Image.fromarray(gray_final_image, "L")
+        image_bin.save(
+            os.path.join(
+                OUTPUT_IMAGES_DIR,
+                f"image_{frame}.png",
+            ),
+        )
+
+
+def main():
+    final_images = []
+    K = 2
+    for frame in range(SEQ_SIZE):
+        image = cv.imread(os.path.join(SEQ_DIR, f"image_{frame}.png"))
+        assert image is not None
+        proc_image = np.float32(image.reshape((-1, 3)))
+        criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.5)
+        comp, labels, centers = cv.kmeans(proc_image, K, None, criteria, 30, cv.KMEANS_RANDOM_CENTERS)
+        int_center = np.uint8(centers)
+        gray_center = np.zeros(2, dtype=np.uint8)
+        for i in range(len(int_center)):
+            gray_center[i] = np.round(0.114 * int_center[i][0] + 0.587 * int_center[i][1] + 0.299 * int_center[i][2])
+        match_center = np.max(gray_center)
+        res = int_center[labels.flatten()]
+        res2 = res.reshape(image.shape)
+        gray_final_image = cv.cvtColor(res2, cv.COLOR_BGR2GRAY)
+        final_images.append(gray_final_image == match_center)
+    mask = np.array(final_images)
+    with open(os.path.join(OUTPUT_IMAGES_DIR, "mask_save.npy"), "wb") as f:
+        np.save(f, mask)
 
 
 if __name__ == "__main__":
