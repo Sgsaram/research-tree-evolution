@@ -69,7 +69,6 @@ def show_images(
         table[frame // row_size][frame % row_size].imshow(images[frame])
 
 
-
 def process_image(
     image: np.ndarray,
 ) -> np.ndarray:
@@ -93,9 +92,9 @@ def process_image(
     gray_center = np.zeros(2, dtype=np.uint8)
     for i in range(len(int_center)):
         gray_center[i] = np.round(
-            0.114 * int_center[i][0] +
-            0.587 * int_center[i][1] +
-            0.299 * int_center[i][2],
+            0.114 * int_center[i][0]
+            + 0.587 * int_center[i][1]
+            + 0.299 * int_center[i][2],
         )
     if abs(np.int16(gray_center[0]) - np.int16(gray_center[1])) < min_dist_gray:
         return np.ones(image.shape[:2], dtype=bool)
