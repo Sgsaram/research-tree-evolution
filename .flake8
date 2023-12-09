@@ -1,7 +1,6 @@
 [flake8]
-
 import-order-style = google
-
+max-line-length = 88
 exclude =
     .git/,
     .vscode/,
@@ -10,5 +9,4 @@ exclude =
     .eolearn_cache/,
     .ipynb_checkpoints/,
     venv/,
-
 inline-quotes = "

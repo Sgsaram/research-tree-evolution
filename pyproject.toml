@@ -1,3 +1,2 @@
 [tool.black]
-line-length = 79
 exclude = "(.git/)|(.vscode/)|(.idea/)|(__pycache__/)|(.eolearn_cache/)|(.ipynb_checkpoints/)|(venv/)"

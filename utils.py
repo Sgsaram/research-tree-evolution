@@ -1,15 +1,14 @@
 import os
-import numpy as np
-import matplotlib.pyplot as plt
-import cv2 as cv
-import PIL.Image
-import PIL.GifImagePlugin
+from typing import Tuple
 
-from typing import List, Tuple
+import matplotlib.pyplot as plt
+import numpy as np
+import PIL.GifImagePlugin
+import PIL.Image
+
 
 def images_to_rgb_mask(
-        images: np.ndarray,
-        color: tuple[int, int, int] = (255, 105, 97)
+    images: np.ndarray, color: Tuple[int, int, int] = (255, 105, 97)
 ) -> np.ndarray:
     res = []
     n_shape = images.shape
@@ -28,7 +27,7 @@ def images_to_rgb_mask(
 
 
 def remove_folder_content(
-        path: str,
+    path: str,
 ) -> None:
     """
     EXAMPLE:
@@ -39,10 +38,11 @@ def remove_folder_content(
         if os.path.isfile(file_path) or os.path.islink(file_path):
             os.unlink(file_path)
 
-def show_images( 
-        images: np.ndarray,
-        row_size: int = 6,
-        fig_size: Tuple[int, int] = (25, 30),
+
+def show_images(
+    images: np.ndarray,
+    row_size: int = 6,
+    fig_size: Tuple[int, int] = (25, 30),
 ) -> None:
     """
     EXAMPLE:
@@ -57,13 +57,14 @@ def show_images(
     fig.set_size_inches(fig_size)
     for frame in range(global_size):
         table[frame // row_size][frame % row_size].axis("off")
-        if (frame >= n_size):
+        if frame >= n_size:
             continue
         table[frame // row_size][frame % row_size].imshow(images[frame])
 
+
 def split_gif(
-        from_path: str,
-        to_path: str,
+    from_path: str,
+    to_path: str,
 ) -> None:
     """
     EXAMPLE:

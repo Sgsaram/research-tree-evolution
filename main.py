@@ -1,21 +1,17 @@
-import os
-import shutil
-import pathlib
-import datetime
-import dotenv
-import matplotlib.pyplot as plt
-import numpy as np
-import cv2 as cv
-import PIL.Image
-import PIL.GifImagePlugin
-import eolearn.io
-import eolearn.core
-import sentinelhub as sh
 import datetime
 import math
-import utils
-
+import os
 from typing import Any, List
+
+import cv2 as cv
+import dotenv
+import eolearn.core
+import eolearn.io
+import numpy as np
+import PIL.GifImagePlugin
+import PIL.Image
+import sentinelhub as sh
+import utils
 
 dotenv.load_dotenv(dotenv.find_dotenv())
 BASE_DIR = os.getcwd()
@@ -30,11 +26,12 @@ EXAMPLE_COORDS = (
     56.72387,
     90.28968,
     56.69019,
-) # (Lng, Lat)
+)  # (Lng, Lat)
 EXAMPLE_TIME_INTERVAL = (
     "2020-12-01",
     "2021-04-01",
 )
+
 
 def save_eodata():
     utils.remove_folder_content(OUTPUT_IMAGES_DIR)
@@ -77,18 +74,18 @@ def save_eodata():
         },
     )
 
-    class high_opt_nat_color:
+    class HighOptNatColor:
         def __init__(self, data_col: str) -> None:
             self.data_col = data_col.lower()
-        
+
         def __call__(self, a) -> Any:
             if self.data_col == "l1c":
                 return min(255, max(0, math.cbrt(0.6 * a - 0.035)) * 255)
             elif self.data_col == "l2a":
                 return min(255, max(0, math.cbrt(0.6 * a) * 255))
             return ValueError(f"Wrong data coolection {self.data_col}")
-    
-    v_process_func = np.vectorize(high_opt_nat_color("l1c"))
+
+    v_process_func = np.vectorize(HighOptNatColor("l1c"))
     v_min = np.vectorize(min)
     eopatch: eolearn.core.eodata.EOPatch = result.outputs["eopatch"]
     time_data: List[datetime.datetime] = eopatch.timestamps.copy()
@@ -113,8 +110,9 @@ def save_eodata():
             ),
         )
 
+
 def process_kmeans():
-    K = 2
+    k = 2
     for frame in range(SEQ_SIZE):
         image = cv.imread(os.path.join(SEQ_DIR, f"image_{frame}.png"))
         assert image is not None
@@ -126,7 +124,7 @@ def process_kmeans():
         )
         comp, labels, centers = cv.kmeans(
             proc_image,
-            K,
+            k,
             None,
             criteria,
             30,
