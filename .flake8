@@ -1,0 +1,14 @@
+[flake8]
+
+import-order-style = google
+
+exclude =
+    .git/,
+    .vscode/,
+    __pycache__/,
+    .idea/
+    .eolearn_cache/,
+    .ipynb_checkpoints/,
+    venv/,
+
+inline-quotes = "
