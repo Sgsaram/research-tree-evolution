@@ -146,26 +146,7 @@ def process_kmeans():
 
 
 def main():
-    final_images = []
-    K = 2
-    for frame in range(SEQ_SIZE):
-        image = cv.imread(os.path.join(SEQ_DIR, f"image_{frame}.png"))
-        assert image is not None
-        proc_image = np.float32(image.reshape((-1, 3)))
-        criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.5)
-        comp, labels, centers = cv.kmeans(proc_image, K, None, criteria, 30, cv.KMEANS_RANDOM_CENTERS)
-        int_center = np.uint8(centers)
-        gray_center = np.zeros(2, dtype=np.uint8)
-        for i in range(len(int_center)):
-            gray_center[i] = np.round(0.114 * int_center[i][0] + 0.587 * int_center[i][1] + 0.299 * int_center[i][2])
-        match_center = np.max(gray_center)
-        res = int_center[labels.flatten()]
-        res2 = res.reshape(image.shape)
-        gray_final_image = cv.cvtColor(res2, cv.COLOR_BGR2GRAY)
-        final_images.append(gray_final_image == match_center)
-    mask = np.array(final_images)
-    with open(os.path.join(OUTPUT_IMAGES_DIR, "mask_save.npy"), "wb") as f:
-        np.save(f, mask)
+    pass
 
 
 if __name__ == "__main__":
