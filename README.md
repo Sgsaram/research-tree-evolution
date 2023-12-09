@@ -21,7 +21,7 @@ deactivate
 ```
 - [ ] Install requirements using this command:
 ```
-pip install -r requirements.txt
+pip install -r requirements/dev.txt
 ```
 
 ## **Jupyter notebook**
