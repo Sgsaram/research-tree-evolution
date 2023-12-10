@@ -23,6 +23,7 @@ deactivate
 ```
 pip install -r requirements/dev.txt
 ```
+There is a bunch of plugins for best practice of using jupyterlab, so check is their work correct
 
 ## **Jupyter notebook**
 
