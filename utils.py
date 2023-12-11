@@ -1,5 +1,4 @@
 import os
-from typing import Tuple
 
 import cv2 as cv
 import matplotlib.pyplot as plt
@@ -8,8 +7,14 @@ import PIL.GifImagePlugin
 import PIL.Image
 
 
-def image_to_rgb_mask(
-    image: np.ndarray, color: Tuple[int, int, int] = (255, 105, 97)
+def mask_array_to_image(
+    image: np.ndarray,
+    colors: list[tuple] = [
+        (0, 0, 0),
+        (249, 65, 68),
+        (144, 190, 109),
+        (249, 199, 79),
+    ],
 ) -> np.ndarray:
     cur_new_image = np.zeros(
         image.shape + (3,),
@@ -17,18 +22,23 @@ def image_to_rgb_mask(
     )
     for x in range(image.shape[0]):
         for y in range(image.shape[1]):
-            if image[x, y]:
-                for k in range(3):
-                    cur_new_image[x, y, k] = color[k]
+            for k in range(3):
+                cur_new_image[x, y, k] = colors[image[x, y]][k]
     return cur_new_image
 
 
-def images_to_rgb_mask(
-    images: np.ndarray, color: Tuple[int, int, int] = (255, 105, 97)
+def mask_arrays_to_images(
+    images: np.ndarray,
+    colors: list[tuple] = [
+        (0, 0, 0),
+        (249, 65, 68),
+        (144, 190, 109),
+        (249, 199, 79),
+    ],
 ) -> np.ndarray:
     res = []
     for i in range(images.shape[0]):
-        res.append(image_to_rgb_mask(images[i], color))
+        res.append(mask_array_to_image(images[i], colors))
     return np.array(res)
 
 
@@ -48,7 +58,7 @@ def remove_folder_content(
 def show_images(
     images: np.ndarray,
     row_size: int = 6,
-    fig_size: Tuple[int, int] = (25, 30),
+    fig_size: tuple[int, int] = (25, 30),
 ) -> None:
     """
     EXAMPLE:
@@ -72,38 +82,64 @@ def show_images(
 def process_image(
     image: np.ndarray,
 ) -> np.ndarray:
-    """
-    CHANGE THIS PART OF CODE
-    """
-    k = 2
-    min_dist_gray = 40
-    blurred_image = cv.medianBlur(image, 21)
-    proc_image = np.float32(blurred_image.reshape((-1, 3)))
-    criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.5)
+    k = 3
+    # blurred_image = cv.medianBlur(image, 21)
+    proc_image = np.float32(image.reshape((-1, 3)))
+    criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 20, 0.5)
     comp, labels, centers = cv.kmeans(
         proc_image,
         k,
         None,
         criteria,
-        10,
+        20,
         cv.KMEANS_RANDOM_CENTERS,
     )
-    int_center = np.uint8(centers)
-    gray_center = np.zeros(2, dtype=np.uint8)
-    for i in range(len(int_center)):
-        gray_center[i] = np.round(
-            0.114 * int_center[i][0]
-            + 0.587 * int_center[i][1]
-            + 0.299 * int_center[i][2],
+    def get_gray_scale(r, g, b):
+        return np.round(
+            0.299 * r +
+            0.587 * g +
+            0.114 * b,
         )
-    if abs(np.int16(gray_center[0]) - np.int16(gray_center[1])) < min_dist_gray:
-        return np.ones(image.shape[:2], dtype=bool)
-    else:
-        match_center = np.max(gray_center)
-        res = int_center[labels.flatten()]
-        res2 = res.reshape(image.shape)
-        gray_final_image = cv.cvtColor(res2, cv.COLOR_BGR2GRAY)
-        return gray_final_image == match_center
+    centers = np.uint8(centers)
+    res = centers[labels.flatten()]
+    return res.reshape(image.shape)
+
+
+# def process_image(
+#     image: np.ndarray,
+# ) -> np.ndarray:
+#     """
+#     CHANGE THIS PART OF CODE
+#     """
+#     k = 3
+#     min_dist_gray = 40
+#     blurred_image = cv.medianBlur(image, 21)
+#     proc_image = np.float32(blurred_image.reshape((-1, 3)))
+#     criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 10, 0.5)
+#     comp, labels, centers = cv.kmeans(
+#         proc_image,
+#         k,
+#         None,
+#         criteria,
+#         10,
+#         cv.KMEANS_RANDOM_CENTERS,
+#     )
+#     int_center = np.uint8(centers)
+#     gray_center = np.zeros(2, dtype=np.uint8)
+#     for i in range(len(int_center)):
+#         gray_center[i] = np.round(
+#             0.114 * int_center[i][0]
+#             + 0.587 * int_center[i][1]
+#             + 0.299 * int_center[i][2],
+#         )
+#     if abs(np.int16(gray_center[0]) - np.int16(gray_center[1])) < min_dist_gray:
+#         return np.ones(image.shape[:2], dtype=bool)
+#     else:
+#         match_center = np.max(gray_center)
+#         res = int_center[labels.flatten()]
+#         res2 = res.reshape(image.shape)
+#         gray_final_image = cv.cvtColor(res2, cv.COLOR_BGR2GRAY)
+#         return gray_final_image == match_center
 
 
 def process_images(
