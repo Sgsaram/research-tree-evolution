@@ -94,12 +94,12 @@ def process_image(
         20,
         cv.KMEANS_RANDOM_CENTERS,
     )
+
     def get_gray_scale(r, g, b):
         return np.round(
-            0.299 * r +
-            0.587 * g +
-            0.114 * b,
+            0.299 * r + 0.587 * g + 0.114 * b,
         )
+
     centers = np.uint8(centers)
     res = centers[labels.flatten()]
     return res.reshape(image.shape)

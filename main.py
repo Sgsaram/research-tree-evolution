@@ -144,8 +144,7 @@ def process_kmeans():
 
 
 def main():
-    array_image = cv.imread(os.path.join(SEQ_DIR, "image_119.png"))
-    
+    pass
 
 
 if __name__ == "__main__":
