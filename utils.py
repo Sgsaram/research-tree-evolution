@@ -82,9 +82,9 @@ def show_images(
 def process_image(
     image: np.ndarray,
 ) -> np.ndarray:
-    k = 3
-    # blurred_image = cv.medianBlur(image, 21)
-    proc_image = np.float32(image.reshape((-1, 3)))
+    k = 2
+    blured_image = cv.medianBlur(image, 21)
+    proc_image = np.float32(blured_image.reshape((-1, 3)))
     criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 20, 0.5)
     comp, labels, centers = cv.kmeans(
         proc_image,
