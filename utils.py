@@ -14,7 +14,7 @@ import sentinelhub as sh
 class CommunicationClient:
     class __AddValidDataMaskTask(eolearn.core.eotask.EOTask):
         def execute(self, eopatch: eolearn.core.eodata.EOPatch):
-            eopatch.mask["validData"] = (
+            eopatch.mask["validMask"] = (
                 eopatch.mask["dataMask"].astype(bool) &
                 ~eopatch.mask["CLM"].astype(bool)
             )
@@ -46,15 +46,20 @@ class CommunicationClient:
         resolution: float | None = 20,
         size: tuple[int, int] | None = None,
         time_difference: datetime.timedelta = datetime.timedelta(hours=12),
-    ) -> np.ndarray:
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Returns array of true color images and
+        valid masks (cloud coverage + data zones)
+        in one time period data collection
+        """
         aoi_bbox = sh.geometry.BBox(
             bbox=coords,
             crs=sh.constants.CRS.WGS84,
         )
         input_task = eolearn.io.sentinelhub_process.SentinelHubInputTask(
-            data_collection=CommunicationClient.__STR_TO_DATA_COLLECTION(
-                data_collection,
-            ),
+            data_collection=CommunicationClient.__STR_TO_DATA_COLLECTION[
+                data_collection
+            ],
             bands=["B04", "B03", "B02"],
             bands_feature=(eolearn.core.constants.FeatureType.DATA, "sentinel_data"),
             additional_data=[
@@ -98,12 +103,14 @@ class CommunicationClient:
         )
         v_min = np.vectorize(min)
         eopatch: eolearn.core.eodata.EOPatch = result.outputs["eopatch"]
-        time_data: list[datetime.datetime] = eopatch.timestamps.copy()
-        merged_list = np.stack((), axic=-1)
-        mask_data = eopatch.mask["dataMask"].copy()
+        return (
+            v_min(eopatch.data["sentinel_data"] * 2.5 * 255, 255).astype(np.uint8),
+            eopatch.mask["validMask"],
+            np.array(eopatch.timestamps),
+        )
 
 
-def mask_array_to_image(
+def cluster_array_to_image(
     image: np.ndarray,
     colors: list[tuple] = [
         (0, 0, 0),
@@ -113,17 +120,21 @@ def mask_array_to_image(
     ],
 ) -> np.ndarray:
     cur_new_image = np.zeros(
-        image.shape + (3,),
+        image.shape[:2] + (3,),
         dtype=np.uint8,
     )
     for x in range(image.shape[0]):
         for y in range(image.shape[1]):
             for k in range(3):
-                cur_new_image[x, y, k] = colors[image[x, y]][k]
+                if type(image[x, y]) == list or type(image[x, y]) == np.ndarray:
+                    cur_val = image[x, y][0]
+                else:
+                    cur_val = image[x, y]
+                cur_new_image[x, y, k] = colors[cur_val][k]
     return cur_new_image
 
 
-def mask_arrays_to_images(
+def cluster_arrays_to_images(
     images: np.ndarray,
     colors: list[tuple] = [
         (0, 0, 0),
@@ -134,7 +145,7 @@ def mask_arrays_to_images(
 ) -> np.ndarray:
     res = []
     for i in range(images.shape[0]):
-        res.append(mask_array_to_image(images[i], colors))
+        res.append(cluster_array_to_image(images[i], colors))
     return np.array(res)
 
 
@@ -157,6 +168,7 @@ def show_images(
     fig_size: tuple[int, int] = (25, 30),
 ) -> None:
     """
+    fig_size: (x, y), where x is width, and y - height
     EXAMPLE:
     show_folder_images(OUTPUT_IMAGES_DIR, SEQ_SIZE)
     """
