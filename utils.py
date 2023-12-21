@@ -1,10 +1,106 @@
+import datetime
 import os
 
 import cv2 as cv
+import eolearn.core
+import eolearn.io
 import matplotlib.pyplot as plt
 import numpy as np
 import PIL.GifImagePlugin
 import PIL.Image
+import sentinelhub as sh
+
+
+class CommunicationClient:
+    class __AddValidDataMaskTask(eolearn.core.eotask.EOTask):
+        def execute(self, eopatch: eolearn.core.eodata.EOPatch):
+            eopatch.mask["validData"] = (
+                eopatch.mask["dataMask"].astype(bool) &
+                ~eopatch.mask["CLM"].astype(bool)
+            )
+            return eopatch
+
+    __STR_TO_DATA_COLLECTION = {
+        "sentinel2_l1c": sh.data_collections.DataCollection.SENTINEL2_L1C,
+        "sentinel2_l2a": sh.data_collections.DataCollection.SENTINEL2_L2A,
+    }
+
+    def __init__(
+        self,
+        sh_client_id: str,
+        sh_client_secret: str,
+        cache_folder: str | None = None,
+    ) -> None:
+        self.config = sh.config.SHConfig(
+            sh_client_id=sh_client_id,
+            sh_client_secret=sh_client_secret,
+            use_defaults=True,
+        )
+        self.cache_folder = cache_folder
+
+    def get_data_otp(
+        self,
+        coords: tuple[float, float, float, float],
+        time_interval: tuple[str, str],
+        data_collection: str = "sentinel2_l1c",
+        resolution: float | None = 20,
+        size: tuple[int, int] | None = None,
+        time_difference: datetime.timedelta = datetime.timedelta(hours=12),
+    ) -> np.ndarray:
+        aoi_bbox = sh.geometry.BBox(
+            bbox=coords,
+            crs=sh.constants.CRS.WGS84,
+        )
+        input_task = eolearn.io.sentinelhub_process.SentinelHubInputTask(
+            data_collection=CommunicationClient.__STR_TO_DATA_COLLECTION(
+                data_collection,
+            ),
+            bands=["B04", "B03", "B02"],
+            bands_feature=(eolearn.core.constants.FeatureType.DATA, "sentinel_data"),
+            additional_data=[
+                (eolearn.core.constants.FeatureType.MASK, "dataMask"),
+                (eolearn.core.constants.FeatureType.MASK, "CLM"),
+            ],
+            size=size,
+            resolution=resolution,
+            time_difference=time_difference,
+            config=self.config,
+            max_threads=5,
+            mosaicking_order=sh.constants.MosaickingOrder.LEAST_CC,
+            maxcc=1,
+            cache_folder=self.cache_folder,
+        )
+        add_valid_data_task = CommunicationClient.__AddValidDataMaskTask()
+        output_task = eolearn.core.eoworkflow_tasks.OutputTask("eopatch")
+        input_node = eolearn.core.eonode.EONode(input_task)
+        add_valid_data_node = eolearn.core.eonode.EONode(
+            add_valid_data_task,
+            inputs=[input_node],
+        )
+        output_node = eolearn.core.eonode.EONode(
+            output_task,
+            inputs=[add_valid_data_node],
+        )
+        workflow = eolearn.core.eoworkflow.EOWorkflow(
+            [
+                input_node,
+                add_valid_data_node,
+                output_node,
+            ],
+        )
+        result = workflow.execute(
+            {
+                input_node: {
+                    "bbox": aoi_bbox,
+                    "time_interval": time_interval,
+                },
+            },
+        )
+        v_min = np.vectorize(min)
+        eopatch: eolearn.core.eodata.EOPatch = result.outputs["eopatch"]
+        time_data: list[datetime.datetime] = eopatch.timestamps.copy()
+        merged_list = np.stack((), axic=-1)
+        mask_data = eopatch.mask["dataMask"].copy()
 
 
 def mask_array_to_image(

@@ -32,6 +32,13 @@ EXAMPLE_TIME_INTERVAL = (
     "2017-02-06",
 )
 
+class AddValidDataMaskTask(eolearn.core.eotask.EOTask):
+    def execute(self, eopatch: eolearn.core.eodata.EOPatch):
+        eopatch.mask["validData"] = (
+            eopatch.mask["dataMask"].astype(bool) &
+            ~eopatch.mask["CLM"].astype(bool)
+        )
+        return eopatch
 
 def save_eodata():
     utils.remove_folder_content(OUTPUT_IMAGES_DIR)
@@ -50,9 +57,10 @@ def save_eodata():
         bands_feature=(eolearn.core.constants.FeatureType.DATA, "L1C_data"),
         additional_data=[
             (eolearn.core.constants.FeatureType.MASK, "dataMask"),
+            (eolearn.core.constants.FeatureType.MASK, "CLM"),
         ],
         size=(128, 128),
-        # resolution=20,
+        resolution=20,
         time_difference=datetime.timedelta(hours=12),
         config=config,
         max_threads=5,
@@ -61,8 +69,10 @@ def save_eodata():
         cache_folder=EOLEARN_CACHE_FOLDER,
     )
     output_task = eolearn.core.eoworkflow_tasks.OutputTask("eopatch")
+    addition_valid_data_task = AddValidDataMaskTask()
     workflow_nodes = eolearn.core.eonode.linearly_connect_tasks(
         input_task,
+        addition_valid_data_task,
         output_task,
     )
     workflow = eolearn.core.eoworkflow.EOWorkflow(workflow_nodes)
@@ -138,12 +148,7 @@ def process_kmeans():
 
 
 def main():
-<<<<<<< HEAD
-    pass
-=======
     save_eodata()
-    
->>>>>>> 71b847779089fe3f3a1b95db975199bb1b9b36fa
 
 
 if __name__ == "__main__":
