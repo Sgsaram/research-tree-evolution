@@ -4,7 +4,7 @@ On **Linux** change `python` and `call` for what you need
 
 ## TODO
 
-Stored in `TODO.md`
+Migrated to ClickUp
 
 ## Preparation
 - [ ] Create `venv`:
@@ -13,7 +13,7 @@ python -m venv venv
 ```
 - [ ] Activate `venv`:
 ```
-call venv/Scripts/activate
+venv\Scripts\activate
 ```
 When you want to deactivate just run this:
 ```
