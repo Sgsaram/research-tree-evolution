@@ -7,6 +7,8 @@ import cv2 as cv
 import dotenv
 import eolearn.core
 import eolearn.io
+import joblib
+import matplotlib.pyplot as plt
 import numpy as np
 import PIL.GifImagePlugin
 import PIL.Image
@@ -148,7 +150,68 @@ def process_kmeans():
 
 
 def main():
-    save_eodata()
+    data = joblib.load(os.path.join(SEQ_DIR, "data_save.sav"))
+
+    def get_gray_scale(a): #rgb
+        return np.round(
+            0.299 * a[0] + 0.587 * a[1] + 0.114 * a[2],
+        )
+
+    def gray_pixel_dist(a, b):
+        return abs(get_gray_scale(a) - get_gray_scale(b))
+
+    def process_pair(image, mask):
+        k = 2
+        d = 20
+        blured_image = cv.medianBlur(image, 9)
+        line_element = np.zeros(image.shape[:2], dtype=np.uint32)
+        res_image = np.zeros(image.shape[:2], dtype=bool)
+        image_line = []
+        for x in range(image.shape[0]):
+            for y in range(image.shape[1]):
+                if mask[x, y][0]:
+                    line_element[x, y] = len(image_line)
+                    image_line.append(np.float32(blured_image[x, y]))
+        image_line = np.array(image_line)
+        if len(image_line) == 0:
+            return res_image
+        criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 20, 0.5)
+        comp, labels, centers = cv.kmeans(
+            image_line,
+            k,
+            None,
+            criteria,
+            20,
+            cv.KMEANS_RANDOM_CENTERS,
+        )
+        gray_centers = np.zeros(k, dtype=np.float32)
+        for i in range(len(centers)):
+            gray_centers[i] = get_gray_scale(np.uint8(centers[i]))
+        truth_center = max(gray_centers)
+        if abs(gray_centers[0] - gray_centers[1]) < d:
+            return res_image
+        line_res = gray_centers[labels.flatten()]
+        for x in range(image.shape[0]):
+            for y in range(image.shape[1]):
+                if mask[x, y][0] and line_res[line_element[x, y]] == truth_center:
+                    res_image[x, y] = True
+        return res_image
+
+    final_masks = []
+    images_to_show = []
+    for tc, mask, _ in data:
+        cur_mask = utils.cluster_array_to_image(
+            process_pair(tc, mask),
+        )
+        if len(final_masks) > 0:
+            cur_mask |= final_masks[-1]
+        final_masks.append(cur_mask)
+        images_to_show.append(tc)
+        images_to_show.append(final_masks[-1])
+        
+
+    utils.show_images(images_to_show, fig_size=(50, 50), row_size=18)
+    plt.savefig(os.path.join(OUTPUT_IMAGES_DIR, "figure_0.png"))
 
 
 if __name__ == "__main__":

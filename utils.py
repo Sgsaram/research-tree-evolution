@@ -41,12 +41,12 @@ class CommunicationClient:
     def get_data_otp(
         self,
         coords: tuple[float, float, float, float],
-        time_interval: tuple[str, str],
+        time_interval: tuple[datetime.date, datetime.date],
         data_collection: str = "sentinel2_l1c",
         resolution: float | None = 20,
         size: tuple[int, int] | None = None,
         time_difference: datetime.timedelta = datetime.timedelta(hours=12),
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    ) -> list[tuple[np.ndarray, np.ndarray, np.ndarray]]:
         """
         Returns array of true color images and
         valid masks (cloud coverage + data zones)
@@ -72,7 +72,6 @@ class CommunicationClient:
             config=self.config,
             max_threads=5,
             mosaicking_order=sh.constants.MosaickingOrder.LEAST_CC,
-            maxcc=1,
             cache_folder=self.cache_folder,
         )
         add_valid_data_task = CommunicationClient.__AddValidDataMaskTask()
@@ -103,12 +102,32 @@ class CommunicationClient:
         )
         v_min = np.vectorize(min)
         eopatch: eolearn.core.eodata.EOPatch = result.outputs["eopatch"]
-        return (
-            v_min(eopatch.data["sentinel_data"] * 2.5 * 255, 255).astype(np.uint8),
+        return list(zip(
+            v_min(eopatch.data["sentinel_data"] * 255 * 3.5, 255).astype(np.uint8),
             eopatch.mask["validMask"],
             np.array(eopatch.timestamps),
-        )
+        ))
 
+    def get_data_mtp(
+        self,
+        coords: tuple[float, float, float, float],
+        time_intervals:list[tuple[datetime.date, datetime.date]],
+        data_collection: str = "sentinel2_l1c",
+        resolution: float | None = 20,
+        size: tuple[int, int] | None = None,
+        time_difference: datetime.timedelta = datetime.timedelta(hours=12),
+    ) -> list[tuple[np.ndarray, np.ndarray, np.ndarray]]:
+        res = []
+        for timep in time_intervals:
+            res.extend(self.get_data_otp(
+                coords,
+                timep,
+                data_collection,
+                resolution,
+                size,
+                time_difference,
+            ))
+        return res
 
 def cluster_array_to_image(
     image: np.ndarray,
