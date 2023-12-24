@@ -34,13 +34,14 @@ EXAMPLE_TIME_INTERVAL = (
     "2017-02-06",
 )
 
+
 class AddValidDataMaskTask(eolearn.core.eotask.EOTask):
     def execute(self, eopatch: eolearn.core.eodata.EOPatch):
-        eopatch.mask["validData"] = (
-            eopatch.mask["dataMask"].astype(bool) &
-            ~eopatch.mask["CLM"].astype(bool)
-        )
+        eopatch.mask["validData"] = eopatch.mask["dataMask"].astype(
+            bool
+        ) & ~eopatch.mask["CLM"].astype(bool)
         return eopatch
+
 
 def save_eodata():
     utils.remove_folder_content(OUTPUT_IMAGES_DIR)
@@ -98,7 +99,6 @@ def save_eodata():
                 return min(255, max(0, math.cbrt(0.6 * a) * 255))
             return ValueError(f"Wrong data coolection {self.data_col}")
 
-    v_process_func = np.vectorize(HighOptNatColor("l1c"))
     v_min = np.vectorize(min)
     eopatch: eolearn.core.eodata.EOPatch = result.outputs["eopatch"]
     time_data: List[datetime.datetime] = eopatch.timestamps.copy()
@@ -108,7 +108,9 @@ def save_eodata():
     print(tc_data.shape, mask_data.shape)
     for ind, time in enumerate(time_data):
         time_str = time.isoformat().replace(":", "-")
-        save_image = PIL.Image.fromarray(cv.cvtColor(tc_data[ind], cv.COLOR_RGB2GRAY), mode="L")
+        save_image = PIL.Image.fromarray(
+            cv.cvtColor(tc_data[ind], cv.COLOR_RGB2GRAY), mode="L"
+        )
         save_image.save(
             os.path.join(
                 OUTPUT_IMAGES_DIR,
@@ -152,7 +154,7 @@ def process_kmeans():
 def main():
     data = joblib.load(os.path.join(SEQ_DIR, "data_save.sav"))
 
-    def get_gray_scale(a): #rgb
+    def get_gray_scale(a):  # rgb
         return np.round(
             0.299 * a[0] + 0.587 * a[1] + 0.114 * a[2],
         )
@@ -208,7 +210,6 @@ def main():
         final_masks.append(cur_mask)
         images_to_show.append(tc)
         images_to_show.append(final_masks[-1])
-        
 
     utils.show_images(images_to_show, fig_size=(50, 50), row_size=18)
     plt.savefig(os.path.join(OUTPUT_IMAGES_DIR, "figure_0.png"))

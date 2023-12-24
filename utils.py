@@ -14,10 +14,9 @@ import sentinelhub as sh
 class CommunicationClient:
     class __AddValidDataMaskTask(eolearn.core.eotask.EOTask):
         def execute(self, eopatch: eolearn.core.eodata.EOPatch):
-            eopatch.mask["validMask"] = (
-                eopatch.mask["dataMask"].astype(bool) &
-                ~eopatch.mask["CLM"].astype(bool)
-            )
+            eopatch.mask["validMask"] = eopatch.mask["dataMask"].astype(
+                bool
+            ) & ~eopatch.mask["CLM"].astype(bool)
             return eopatch
 
     __STR_TO_DATA_COLLECTION = {
@@ -102,16 +101,18 @@ class CommunicationClient:
         )
         v_min = np.vectorize(min)
         eopatch: eolearn.core.eodata.EOPatch = result.outputs["eopatch"]
-        return list(zip(
-            v_min(eopatch.data["sentinel_data"] * 255 * 3.5, 255).astype(np.uint8),
-            eopatch.mask["validMask"],
-            np.array(eopatch.timestamps),
-        ))
+        return list(
+            zip(
+                v_min(eopatch.data["sentinel_data"] * 255 * 3.5, 255).astype(np.uint8),
+                eopatch.mask["validMask"],
+                np.array(eopatch.timestamps),
+            )
+        )
 
     def get_data_mtp(
         self,
         coords: tuple[float, float, float, float],
-        time_intervals:list[tuple[datetime.date, datetime.date]],
+        time_intervals: list[tuple[datetime.date, datetime.date]],
         data_collection: str = "sentinel2_l1c",
         resolution: float | None = 20,
         size: tuple[int, int] | None = None,
@@ -119,15 +120,18 @@ class CommunicationClient:
     ) -> list[tuple[np.ndarray, np.ndarray, np.ndarray]]:
         res = []
         for timep in time_intervals:
-            res.extend(self.get_data_otp(
-                coords,
-                timep,
-                data_collection,
-                resolution,
-                size,
-                time_difference,
-            ))
+            res.extend(
+                self.get_data_otp(
+                    coords,
+                    timep,
+                    data_collection,
+                    resolution,
+                    size,
+                    time_difference,
+                )
+            )
         return res
+
 
 def cluster_array_to_image(
     image: np.ndarray,
@@ -145,7 +149,7 @@ def cluster_array_to_image(
     for x in range(image.shape[0]):
         for y in range(image.shape[1]):
             for k in range(3):
-                if type(image[x, y]) == list or type(image[x, y]) == np.ndarray:
+                if isinstance(image[x, y], list) or isinstance(image[x, y], np.ndarray):
                     cur_val = image[x, y][0]
                 else:
                     cur_val = image[x, y]
