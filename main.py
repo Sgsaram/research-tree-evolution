@@ -37,7 +37,7 @@ EXAMPLE_TIME_INTERVAL = (
 
 
 class AddValidDataMaskTask(eolearn.core.eotask.EOTask):
-    def execute(self, eopatch: eolearn.core.eodata.EOPatch)
+    def execute(self, eopatch: eolearn.core.eodata.EOPatch): #pyright: ignore
         eopatch.mask["validData"] = eopatch.mask["dataMask"].astype(
             bool
         ) & ~eopatch.mask["CLM"].astype(bool)

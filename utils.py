@@ -39,7 +39,7 @@ class CommunicationClient:
         )
         self.cache_folder = cache_folder
 
-    def get_data_otp(
+    def get_data_winter_otp(
         self,
         coords: tuple[float, float, float, float],
         time_interval: tuple[datetime.date, datetime.date],
@@ -49,8 +49,8 @@ class CommunicationClient:
         time_difference: datetime.timedelta = datetime.timedelta(hours=12),
     ) -> list[tuple[np.ndarray, np.ndarray, np.ndarray]]:
         """
-        Returns array of true color images and
-        valid masks (cloud coverage + data zones)
+        Returns array of tuples containing true color image and
+        two valid masks (cloud coverage + data zones)
         in one time period data collection
         """
         aoi_bbox = sh.geometry.BBox(
@@ -114,7 +114,7 @@ class CommunicationClient:
             )
         )
 
-    def get_data_mtp(
+    def get_data_winter_mtp(
         self,
         coords: tuple[float, float, float, float],
         time_intervals: list[tuple[datetime.date, datetime.date]],
@@ -123,10 +123,15 @@ class CommunicationClient:
         size: tuple[int, int] | None = None,
         time_difference: datetime.timedelta = datetime.timedelta(hours=12),
     ) -> list[tuple[np.ndarray, np.ndarray, np.ndarray]]:
+        """
+        Returns array of tuples containing true color image and
+        two valid masks (cloud coverage + data zones)
+        in many time periods data collection
+        """
         res = []
         for timep in time_intervals:
             res.extend(
-                self.get_data_otp(
+                self.get_data_winter_otp(
                     coords,
                     timep,
                     data_collection,
@@ -225,7 +230,7 @@ def process_image(
     comp, labels, centers = cv.kmeans(
         proc_image,
         k,
-        typing.cast(cv2.typing.MatLike, None),
+        typing.cast(np.ndarray, None),
         criteria,
         20,
         cv.KMEANS_RANDOM_CENTERS,
