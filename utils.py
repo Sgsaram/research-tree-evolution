@@ -1,7 +1,9 @@
 import datetime
 import os
+import typing
 
 import cv2 as cv
+import cv2.typing
 import eolearn.core
 import eolearn.io
 import matplotlib.pyplot as plt
@@ -13,7 +15,7 @@ import sentinelhub as sh
 
 class CommunicationClient:
     class __AddValidDataMaskTask(eolearn.core.eotask.EOTask):
-        def execute(self, eopatch: eolearn.core.eodata.EOPatch):
+        def execute(self, eopatch: eolearn.core.eodata.EOPatch): # pyright: ignore
             eopatch.mask["validMask"] = eopatch.mask["dataMask"].astype(
                 bool
             ) & ~eopatch.mask["CLM"].astype(bool)
@@ -100,7 +102,10 @@ class CommunicationClient:
             },
         )
         v_min = np.vectorize(min)
-        eopatch: eolearn.core.eodata.EOPatch = result.outputs["eopatch"]
+        eopatch: eolearn.core.eodata.EOPatch = typing.cast(
+            eolearn.core.eodata.EOPatch,
+            result.outputs["eopatch"]
+        )
         return list(
             zip(
                 v_min(eopatch.data["sentinel_data"] * 255 * 3.5, 255).astype(np.uint8),
@@ -215,12 +220,12 @@ def process_image(
 ) -> np.ndarray:
     k = 2
     blured_image = cv.medianBlur(image, 21)
-    proc_image = np.float32(blured_image.reshape((-1, 3)))
+    proc_image = blured_image.reshape((-1, 3)).astype(np.float32)
     criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 20, 0.5)
     comp, labels, centers = cv.kmeans(
         proc_image,
         k,
-        None,
+        typing.cast(cv2.typing.MatLike, None),
         criteria,
         20,
         cv.KMEANS_RANDOM_CENTERS,
@@ -231,8 +236,8 @@ def process_image(
             0.299 * r + 0.587 * g + 0.114 * b,
         )
 
-    centers = np.uint8(centers)
-    res = centers[labels.flatten()]
+    centers = centers.astype(np.uint8)
+    res = centers[labels.flatten()] # pyright: ignore
     return res.reshape(image.shape)
 
 

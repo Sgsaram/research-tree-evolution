@@ -1,9 +1,10 @@
 import datetime
 import math
 import os
-from typing import Any, List
+import typing
 
 import cv2 as cv
+import cv2.typing
 import dotenv
 import eolearn.core
 import eolearn.io
@@ -36,7 +37,7 @@ EXAMPLE_TIME_INTERVAL = (
 
 
 class AddValidDataMaskTask(eolearn.core.eotask.EOTask):
-    def execute(self, eopatch: eolearn.core.eodata.EOPatch):
+    def execute(self, eopatch: eolearn.core.eodata.EOPatch)
         eopatch.mask["validData"] = eopatch.mask["dataMask"].astype(
             bool
         ) & ~eopatch.mask["CLM"].astype(bool)
@@ -92,7 +93,7 @@ def save_eodata():
         def __init__(self, data_col: str) -> None:
             self.data_col = data_col.lower()
 
-        def __call__(self, a) -> Any:
+        def __call__(self, a) -> typing.Any:
             if self.data_col == "l1c":
                 return min(255, max(0, math.cbrt(0.6 * a - 0.035)) * 255)
             elif self.data_col == "l2a":
@@ -100,8 +101,8 @@ def save_eodata():
             return ValueError(f"Wrong data coolection {self.data_col}")
 
     v_min = np.vectorize(min)
-    eopatch: eolearn.core.eodata.EOPatch = result.outputs["eopatch"]
-    time_data: List[datetime.datetime] = eopatch.timestamps.copy()
+    eopatch: eolearn.core.eodata.EOPatch = typing.cast(eolearn.core.eodata.EOPatch, result.outputs["eopatch"])
+    time_data: list[datetime.datetime] = eopatch.timestamps.copy()
     mask_data = eopatch.mask["dataMask"].copy()
     tc_data = v_min(eopatch.data["L1C_data"].copy() * 2.5 * 255, 255).astype(np.uint8)
     # honc_data = v_process_func(eopatch.data["L1C_data"].copy()).astype(np.uint8)
@@ -178,10 +179,10 @@ def main():
         if len(image_line) == 0:
             return res_image
         criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 20, 0.5)
-        comp, labels, centers = cv.kmeans(
+        _, labels, centers = cv.kmeans(
             image_line,
             k,
-            None,
+            typing.cast(cv2.typing.MatLike, None),
             criteria,
             20,
             cv.KMEANS_RANDOM_CENTERS,
