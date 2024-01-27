@@ -8,3 +8,4 @@ __pycache__/
 output_images/*
 draft_input.txt
 draft_output.txt
+pyrightconfig.json

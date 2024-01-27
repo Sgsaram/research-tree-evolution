@@ -1,5 +1,6 @@
 import datetime
 import os
+import typing
 
 import cv2 as cv
 import eolearn.core
@@ -12,8 +13,8 @@ import sentinelhub as sh
 
 
 class CommunicationClient:
-    class __AddValidDataMaskTask(eolearn.core.eotask.EOTask):
-        def execute(self, eopatch: eolearn.core.eodata.EOPatch):
+    class __AddValidDataMaskTask(eolearn.core.eotask.EOTask): 
+        def execute(self, eopatch: eolearn.core.eodata.EOPatch): # pyright: ignore
             eopatch.mask["validMask"] = eopatch.mask["dataMask"].astype(
                 bool
             ) & ~eopatch.mask["CLM"].astype(bool)
@@ -37,7 +38,7 @@ class CommunicationClient:
         )
         self.cache_folder = cache_folder
 
-    def get_data_otp(
+    def get_data_winter_otp(
         self,
         coords: tuple[float, float, float, float],
         time_interval: tuple[datetime.date, datetime.date],
@@ -47,8 +48,8 @@ class CommunicationClient:
         time_difference: datetime.timedelta = datetime.timedelta(hours=12),
     ) -> list[tuple[np.ndarray, np.ndarray, np.ndarray]]:
         """
-        Returns array of true color images and
-        valid masks (cloud coverage + data zones)
+        Returns array of tuples containing true color image and
+        two valid masks (cloud coverage + data zones)
         in one time period data collection
         """
         aoi_bbox = sh.geometry.BBox(
@@ -100,7 +101,7 @@ class CommunicationClient:
             },
         )
         v_min = np.vectorize(min)
-        eopatch: eolearn.core.eodata.EOPatch = result.outputs["eopatch"]
+        eopatch: eolearn.core.eodata.EOPatch = typing.cast(eolearn.core.eodata.EOPatch, result.outputs["eopatch"])
         return list(
             zip(
                 v_min(eopatch.data["sentinel_data"] * 255 * 3.5, 255).astype(np.uint8),
@@ -109,7 +110,7 @@ class CommunicationClient:
             )
         )
 
-    def get_data_mtp(
+    def get_data_winter_mtp(
         self,
         coords: tuple[float, float, float, float],
         time_intervals: list[tuple[datetime.date, datetime.date]],
@@ -118,10 +119,15 @@ class CommunicationClient:
         size: tuple[int, int] | None = None,
         time_difference: datetime.timedelta = datetime.timedelta(hours=12),
     ) -> list[tuple[np.ndarray, np.ndarray, np.ndarray]]:
+        """
+        Returns array of tuples containing true color image and
+        two valid masks (cloud coverage + data zones)
+        in many time periods data collection
+        """
         res = []
         for timep in time_intervals:
             res.extend(
-                self.get_data_otp(
+                self.get_data_winter_otp(
                     coords,
                     timep,
                     data_collection,
@@ -215,12 +221,12 @@ def process_image(
 ) -> np.ndarray:
     k = 2
     blured_image = cv.medianBlur(image, 21)
-    proc_image = np.float32(blured_image.reshape((-1, 3)))
+    proc_image = blured_image.reshape((-1, 3)).astype(np.float32)
     criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 20, 0.5)
     comp, labels, centers = cv.kmeans(
         proc_image,
         k,
-        None,
+        typing.cast(np.ndarray, None),
         criteria,
         20,
         cv.KMEANS_RANDOM_CENTERS,
@@ -231,8 +237,8 @@ def process_image(
             0.299 * r + 0.587 * g + 0.114 * b,
         )
 
-    centers = np.uint8(centers)
-    res = centers[labels.flatten()]
+    centers = centers.astype(np.uint8)
+    res = centers[labels.flatten()] # pyright: ignore
     return res.reshape(image.shape)
 
 
