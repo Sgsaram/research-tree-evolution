@@ -1,4 +1,8 @@
-# Research for tree evolution project
+# IMPORTANT
+
+This is research part of forest guard project. Please check Forest Guard CLI repository.
+
+# Research for tree evolution project (forest guard research)
 
 On **Linux** change `python` and `call` for what you need
 
@@ -23,7 +27,7 @@ deactivate
 ```
 pip install -r requirements/dev.txt
 ```
-There is a bunch of plugins for best practice of using jupyterlab, so check is their work correct
+There is a bunch of plugins for best practice of using jupyterlab, so check if their work correct
 
 ## **Jupyter notebook**
 
