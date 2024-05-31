@@ -2,7 +2,7 @@
 
 This is research part of forest guard project. Please check Forest Guard CLI repository.
 
-# Research for *forest guard* project (not all parts)
+# Research for **forest guard** project (not all parts)
 
 On **Linux** change `python` and `call` for what you need
 
